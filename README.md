@@ -76,17 +76,17 @@ venv\Scripts\activate.bat
 pip install -r requirements.txt
 ```
 
-4. Levantar la API con recarga automatica:
+4. Levantar la API con recarga automatica y puerto específico:
 
 ```powershell
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
 ## Probar que funciona
 
 Con la API corriendo, abre en tu navegador:
 
-- `http://127.0.0.1:8000/` (debe responder `Hola mundo`)
+- `http://127.0.0.1:8001/` (debe responder `Hola mundo`)
 
 ## Dependencias principales
 

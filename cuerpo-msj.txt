@@ -1,0 +1,37 @@
+{
+  "envelope": {
+    "content_hash": "4420ab978bdc4d0f40ac2c7b3ae2d4964cc4522fc1729737f8488a0e12dd96bf",
+    "correlation_id": "a7a74c7c-c310-4bbb-8e7d-235ba643e2e6",
+    "created_at": 1778026351,
+    "device_hash": "6a40cd4b48a023e53565435ee937066b799dcd0213d2c392b07a49da868fb14f",
+    "message_id": "89d05111-5134-4e81-a8b4-7d70c25627ab",
+    "retry_count": 0,
+    "signature": "ae6ec65a980781ed6a32c235354ce3455c6a6df29cfdc3266d9c41893bd40b69",
+    "source": "android-sms-listener",
+    "status": "SENT",
+    "version": "1.0"
+  },
+  "payload": {
+    "body": "BCR",
+    "debug": {
+      "format": "3gpp",
+      "pdu": "06910536002500040b910586699427f100006250508121724a03c2a114"
+    },
+    "device": {
+      "sim_slot": -1,
+      "subscription_id": 1
+    },
+    "metadata": {
+      "protocol_id": 0,
+      "service_center": "+5063005200",
+      "status": 0
+    },
+    "multipart": {
+      "ref": 0,
+      "seq": 1,
+      "total": 1
+    },
+    "sender": "+50689649721",
+    "timestamp": 1778026347
+  }
+}

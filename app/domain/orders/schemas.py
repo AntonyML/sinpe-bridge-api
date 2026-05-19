@@ -1,35 +1,24 @@
-"""
-Schemas para purchase_orders.
-El POS usa estos contratos para comunicarse con la API.
-"""
-
 import uuid
 from datetime import datetime
-from typing import Literal
-
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
 
 class OrderProduct(BaseModel):
-    code: str = Field(min_length=1)
-    name: str = Field(min_length=1)
-    price: float = Field(ge=0)
-    quantity: int = Field(ge=1)
-    line_total: float = Field(ge=0)
-
+    code: str
+    name: str
+    price: float
+    quantity: int
+    line_total: float
 
 class PurchaseOrderCreate(BaseModel):
     """Lo que el POS manda al registrar una orden."""
-    order_number: str = Field(min_length=1, max_length=64)
-    id_pos: str = Field(min_length=1, max_length=64)
-    amount: float = Field(gt=0)
-    payment_method: Literal["sinpe", "cash", "card", "transfer"]
-    # Teléfono del cliente — necesario para luego asociar el pago SINPE
-    correlation_token: str | None = Field(default=None, max_length=20)
-    products: list[OrderProduct] = Field(min_length=1)
+    order_number: str
+    id_pos: str
+    amount: float
+    payment_method: str
+    correlation_token: str | None = None
+    products: list[OrderProduct]
     ordered_at: datetime
     expires_at: datetime | None = None
-
 
 class PurchaseOrderResponse(BaseModel):
     """Lo que la API devuelve al POS."""

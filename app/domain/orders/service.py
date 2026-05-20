@@ -1,11 +1,7 @@
-"""Lógica de negocio para órdenes de compra."""
-
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.domain.orders.repository import OrderRepository
 from app.domain.orders.schemas import PurchaseOrderCreate, PurchaseOrderResponse
-
 
 class OrderService:
     def __init__(self, db: AsyncSession) -> None:

@@ -10,7 +10,7 @@ class OrderProduct(BaseModel):
     line_total: float
 
 class PurchaseOrderCreate(BaseModel):
-    """Lo que el POS manda al registrar una orden."""
+    # Lo que el POS manda al registrar una orden
     order_number: str
     id_pos: str
     amount: float
@@ -21,7 +21,7 @@ class PurchaseOrderCreate(BaseModel):
     expires_at: datetime | None = None
 
 class PurchaseOrderResponse(BaseModel):
-    """Lo que la API devuelve al POS."""
+    # Lo que la API devuelve al POS
     id: uuid.UUID
     order_number: str
     id_pos: str

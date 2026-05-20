@@ -2,9 +2,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
-# statement_cache_size=0 es obligatorio para Supabase 
+# Use SQLite for development if DATABASE_URL not provided
+database_url = settings.DATABASE_URL or "sqlite+aiosqlite:///./sinpe_bridge.db"
+
+# statement_cache_size=0 is required for Supabase
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    database_url,
     echo=settings.DEBUG,
     pool_size=5,
     max_overflow=0,

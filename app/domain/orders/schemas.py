@@ -1,6 +1,15 @@
 import uuid
 from datetime import datetime
-from pydantic import BaseModel
+from enum import Enum
+from pydantic import BaseModel, Field
+
+
+class PaymentMethod(str, Enum):
+    sinpe = "sinpe"
+    card = "card"
+    cash = "cash"
+    transfer = "transfer"
+
 
 class OrderProduct(BaseModel):
     code: str
@@ -9,19 +18,19 @@ class OrderProduct(BaseModel):
     quantity: int
     line_total: float
 
+
 class PurchaseOrderCreate(BaseModel):
-    # Lo que el POS manda al registrar una orden
-    order_number: str
-    id_pos: str
-    amount: float
-    payment_method: str
-    correlation_token: str | None = None
-    products: list[OrderProduct]
+    order_number: str = Field(min_length=1, max_length=100)
+    id_pos: str = Field(min_length=1, max_length=50)
+    amount: float = Field(gt=0)
+    payment_method: PaymentMethod = PaymentMethod.sinpe
+    correlation_token: str | None = Field(default=None, max_length=8)
+    products: list[OrderProduct] = []
     ordered_at: datetime
     expires_at: datetime | None = None
 
+
 class PurchaseOrderResponse(BaseModel):
-    # Lo que la API devuelve al POS
     id: uuid.UUID
     order_number: str
     id_pos: str

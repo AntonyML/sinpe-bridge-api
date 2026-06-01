@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,10 +29,14 @@ class PurchaseOrder(Base):
         Numeric(12, 2), nullable=False
     )
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="pending"
+        SAEnum("pending", "matched", "confirmed", "review", "expired", "rejected",
+               name="order_status", create_type=False),
+        nullable=False, default="pending"
     )
     payment_method: Mapped[str] = mapped_column(
-        String(20), nullable=False
+        SAEnum("sinpe", "card", "cash", "transfer",
+               name="payment_method", create_type=False),
+        nullable=False
     )
     # Teléfono del cliente — sirve para luego correlacionar con el pago SINPE
     correlation_token: Mapped[str | None] = mapped_column(

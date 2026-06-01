@@ -3,12 +3,12 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    # Database
-    DATABASE_URL: str
-    DEBUG: bool = False
+    # Database (optional for development)
+    DATABASE_URL: Optional[str] = None
+    DEBUG: bool = True
     
     # API Security
-    API_KEY: str = ""  # Shared key with Worker Proxy
+    API_KEY: str = "dev-key-12345"
     API_KEY_HEADER: str = "x-api-key"
     
     # Request Handling

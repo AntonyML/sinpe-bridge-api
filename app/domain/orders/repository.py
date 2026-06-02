@@ -36,6 +36,18 @@ class OrderRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_pos_and_token(
+        self, id_pos: str, correlation_token: str
+    ) -> PurchaseOrder | None:
+        result = await self._db.execute(
+            select(PurchaseOrder).where(
+                PurchaseOrder.id_pos == id_pos,
+                PurchaseOrder.correlation_token == correlation_token,
+            )
+        )
+        row = result.scalar_one_or_none()
+        return row
+
     async def get_by_id(self, order_id: uuid.UUID) -> PurchaseOrder | None:
         result = await self._db.execute(
             select(PurchaseOrder).where(PurchaseOrder.id == order_id)

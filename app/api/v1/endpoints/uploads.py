@@ -1,26 +1,14 @@
-"""
-Upload endpoints for SINPE Bridge API.
-
-Provides:
-- POST /api/v1/uploads/receipts - Upload receipt images
-- POST /api/v1/uploads/qr - Upload QR codes
-- GET /api/v1/uploads/{upload_id} - Get upload status/metadata
-- DELETE /api/v1/uploads/{upload_id} - Delete uploaded file
-"""
-
 import logging
 from typing import Optional
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Depends
-from fastapi.responses import JSONResponse
-
+from app.api.deps import get_upload_service
 from app.core.middleware import get_trace_context
-from app.domain.uploads.schemas import ImageType, UploadResponse, UploadStatusResponse
-from app.domain.uploads.service import get_upload_service, UploadService
+from app.domain.uploads.schemas import ImageType, UploadResponse
+from app.domain.uploads.service import UploadService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
-
+router = APIRouter(prefix="/uploads", tags=["uploads"])
 
 @router.post(
     "/receipts",
@@ -30,21 +18,13 @@ router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
 )
 async def upload_receipt(
     file: UploadFile = File(...),
+    id_pos: str = Form(...),
+    correlation_token: str = Form(...),
     device_id: str = Form(...),
-    correlation_id: str = Form(...),
+    correlation_id: Optional[str] = Form(None),
     message_id: Optional[str] = Form(None),
     upload_service: UploadService = Depends(get_upload_service),
 ):
-    """
-    Upload a receipt image.
-    
-    - **file**: Image file (JPEG, PNG, WebP)
-    - **device_id**: Device identifier
-    - **correlation_id**: Request correlation ID
-    - **message_id**: Related message ID (optional)
-    
-    Returns upload metadata and storage path.
-    """
     trace_context = get_trace_context()
     
     try:
@@ -54,22 +34,23 @@ async def upload_receipt(
         if not content:
             raise HTTPException(status_code=400, detail="File is empty")
         
-        # Upload with validation
         response = await upload_service.upload_file(
             file_content=content,
             filename=file.filename or "receipt.jpg",
             mime_type=file.content_type or "image/jpeg",
             image_type=ImageType.RECEIPT_QR,
+            id_pos=id_pos,
+            correlation_token=correlation_token,
             device_id=device_id,
-            correlation_id=correlation_id,
+            correlation_id=correlation_id or trace_context.correlation_id,
             message_id=message_id,
         )
-        
+
         logger.info(
             f"Receipt uploaded: upload_id={response.upload_id}, "
             f"size={response.file_size}, correlation_id={trace_context.correlation_id}"
         )
-        
+
         return response
         
     except ValueError as e:
@@ -88,19 +69,12 @@ async def upload_receipt(
 )
 async def upload_qr(
     file: UploadFile = File(...),
+    id_pos: str = Form(...),
+    correlation_token: str = Form(...),
     device_id: str = Form(...),
-    correlation_id: str = Form(...),
+    correlation_id: Optional[str] = Form(None),
     upload_service: UploadService = Depends(get_upload_service),
 ):
-    """
-    Upload a QR code image.
-    
-    - **file**: QR code image file
-    - **device_id**: Device identifier
-    - **correlation_id**: Request correlation ID
-    
-    Returns upload metadata and storage path.
-    """
     trace_context = get_trace_context()
     
     try:
@@ -114,15 +88,17 @@ async def upload_qr(
             filename=file.filename or "qr.png",
             mime_type=file.content_type or "image/png",
             image_type=ImageType.RECEIPT_QR,
+            id_pos=id_pos,
+            correlation_token=correlation_token,
             device_id=device_id,
-            correlation_id=correlation_id,
+            correlation_id=correlation_id or trace_context.correlation_id,
         )
-        
+
         logger.info(
             f"QR uploaded: upload_id={response.upload_id}, "
             f"correlation_id={trace_context.correlation_id}"
         )
-        
+
         return response
         
     except ValueError as e:
@@ -143,7 +119,6 @@ async def get_upload(
     upload_id: str,
     upload_service: UploadService = Depends(get_upload_service),
 ):
-    """Get metadata for an uploaded file."""
     trace_context = get_trace_context()
     
     try:
@@ -174,7 +149,6 @@ async def delete_upload(
     upload_id: str,
     upload_service: UploadService = Depends(get_upload_service),
 ):
-    """Delete an uploaded file."""
     trace_context = get_trace_context()
     
     deleted = await upload_service.delete_file(upload_id)

@@ -1,13 +1,8 @@
-"""Acceso a datos para sinpe_raw_messages."""
-
 import uuid
 from datetime import datetime, timezone
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.infrastructure.db.models import SinpeRawMessage
-
 
 class SinpeMessageRepository:
     def __init__(self, db: AsyncSession) -> None:
@@ -22,6 +17,8 @@ class SinpeMessageRepository:
         message_timestamp: datetime | None,
         envelope: dict,
         payload_raw: dict,
+        purchase_order_id: uuid.UUID | None = None,
+        processed: bool = False,
     ) -> SinpeRawMessage:
         msg = SinpeRawMessage(
             id_pos=id_pos,
@@ -31,7 +28,8 @@ class SinpeMessageRepository:
             message_timestamp=message_timestamp,
             envelope=envelope,
             payload_raw=payload_raw,
-            processed=False,
+            purchase_order_id=purchase_order_id,
+            processed=processed,
         )
         self._db.add(msg)
         await self._db.commit()
@@ -46,7 +44,8 @@ class SinpeMessageRepository:
                 SinpeRawMessage.message_id == message_id
             )
         )
-        return result.scalar_one_or_none()
+        row = result.scalar_one_or_none()
+        return row
 
     async def get_by_id(self, msg_id: uuid.UUID) -> SinpeRawMessage | None:
         result = await self._db.execute(

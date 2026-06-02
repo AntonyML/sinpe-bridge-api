@@ -1,14 +1,11 @@
 
 import uuid
-
 from fastapi import APIRouter, Depends, Query, status
-
 from app.api.deps import get_sinpe_message_service
 from app.domain.payments.schemas import SinpeMessageCreate, SinpeMessageResponse
 from app.domain.payments.service import SinpeMessageService
 
 router = APIRouter()
-
 
 @router.post(
     "",

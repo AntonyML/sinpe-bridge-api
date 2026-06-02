@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     ]
     
     # Storage
-    UPLOAD_STORAGE_PATH: str = "/uploads"
+    UPLOAD_STORAGE_PATH: str = "uploads"
     ENABLE_R2_STORAGE: bool = False  # Cloudflare R2
     R2_BUCKET_NAME: Optional[str] = None
     R2_ACCOUNT_ID: Optional[str] = None

@@ -85,3 +85,5 @@ yarn-error.log
 dist/
 .mypy_cache/
 .pyre/
+
+uploads/

@@ -1,8 +1,9 @@
+import re
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
 
 from app.domain.payments.schemas import ParsedSinpeData
-from app.infrastructure.db.models import PurchaseOrderModel
+from app.infrastructure.db.models import PurchaseOrder as PurchaseOrderModel
 from app.shared.constants import (
     MAX_AMOUNT_DIFF,
     NAME_SIMILARITY_THRESHOLD,
@@ -97,8 +98,6 @@ def rule_reference_unique(reference: str | None, already_used: bool) -> tuple[bo
 
 
 # Motor de conciliación
-
-import re  # noqa: E402
 
 
 def _name_ratio(a: str, b: str) -> float:

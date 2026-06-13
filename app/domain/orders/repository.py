@@ -1,10 +1,12 @@
+import re
 import uuid
 from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.orders.schemas import PurchaseOrderCreate
 from app.infrastructure.db.models import PurchaseOrder
-from app.shared.constants import PAYMENT_WINDOW_MINUTES
+from app.shared.constants import MAX_AMOUNT_DIFF, PAYMENT_WINDOW_MINUTES
+from app.shared.enums import OrderStatus
 
 class OrderRepository:
     def __init__(self, db: AsyncSession) -> None:
@@ -65,3 +67,49 @@ class OrderRepository:
             .offset(offset)
         )
         return list(result.scalars().all())
+
+    async def _pending_orders(self, id_pos: str) -> list[PurchaseOrder]:
+        """Órdenes aún sin pagar de un POS, de la más reciente a la más antigua."""
+        result = await self._db.execute(
+            select(PurchaseOrder)
+            .where(
+                PurchaseOrder.id_pos == id_pos,
+                PurchaseOrder.status == OrderStatus.PENDING.value,
+            )
+            .order_by(PurchaseOrder.ordered_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def find_pending_by_token(
+        self, id_pos: str, phone: str
+    ) -> PurchaseOrder | None:
+        """
+        Busca una orden pendiente cuyo correlation_token coincida con el
+        teléfono de quien paga.
+        """
+        target = re.sub(r"\D", "", phone)[-8:]
+        for order in await self._pending_orders(id_pos):
+            if not order.correlation_token:
+                continue
+            if re.sub(r"\D", "", order.correlation_token)[-8:] == target:
+                return order
+        return None
+
+    async def find_pending_by_amount(
+        self, id_pos: str, amount: float
+    ) -> PurchaseOrder | None:
+        """Busca una orden pendiente cuyo monto coincida (dentro de la tolerancia)."""
+        for order in await self._pending_orders(id_pos):
+            if abs(float(order.amount) - amount) <= MAX_AMOUNT_DIFF:
+                return order
+        return None
+
+    async def update_status(
+        self, order_id: uuid.UUID, status: OrderStatus | str
+    ) -> None:
+        """Actualiza el estado de una orden."""
+        order = await self.get_by_id(order_id)
+        if order is None:
+            return
+        order.status = status.value if isinstance(status, OrderStatus) else status
+        await self._db.commit()

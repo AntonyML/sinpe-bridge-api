@@ -9,6 +9,7 @@ colorama==0.4.6
 fastapi==0.135.3
 greenlet==3.5.0
 h11==0.16.0
+httpx==0.28.1
 idna==3.11
 pydantic==2.13.0
 pydantic-settings==2.14.1

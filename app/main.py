@@ -136,6 +136,17 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 async def startup_event():
+    # En desarrollo (SQLite, sin DATABASE_URL) creamos las tablas que falten
+    # para poder levantar el backend sin migraciones manuales. En producción
+    # (Supabase) el schema se gestiona con SQL aparte, así que no se toca.
+    if not settings.DATABASE_URL:
+        from app.infrastructure.db.base import Base
+        from app.infrastructure.db.session import engine
+        import app.infrastructure.db.models  # noqa: F401  (registra los modelos)
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
     logger.info(
         json.dumps({
             "type": "startup",

@@ -7,7 +7,7 @@ from app.domain.orders.repository import OrderRepository
 from app.domain.payments.repository import SinpeMessageRepository
 from app.domain.payments.schemas import ParsedSinpeData, SinpeIncomingResponse, SinpeMessageIncoming
 from app.domain.reconciliation.rules import ReconciliationEngine
-from app.infrastructure.db.models import PurchaseOrderModel, SinpeRawMessageModel
+from app.infrastructure.db.models import PurchaseOrder as PurchaseOrderModel
 from app.infrastructure.sms.extractor import extract_sinpe_data
 from app.shared.enums import OrderStatus, ReconciliationResult
 
@@ -98,9 +98,9 @@ class ReconciliationService:
         # 8. Actualizar el estado de la orden según el resultado
         new_status: OrderStatus | None = None
         if result == ReconciliationResult.APPROVED:
-            new_status = OrderStatus.PAID          # pago confirmado
+            new_status = OrderStatus.CONFIRMED     # pago confirmado
         elif result == ReconciliationResult.UNDER_REVIEW:
-            new_status = OrderStatus.UNDER_REVIEW  #  revisión manual
+            new_status = OrderStatus.REVIEW        #  revisión manual
         elif result == ReconciliationResult.EXPIRED:
             new_status = OrderStatus.EXPIRED       # pago llegó fuera de tiempo
         # Si fue RECHAZADO o DUPLICADO → la orden sigue PENDING para reintento

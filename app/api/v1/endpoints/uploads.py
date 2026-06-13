@@ -13,13 +13,21 @@ from typing import Optional
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
 
+from app.api.deps import get_image_analyzer
+from app.core.config import settings
 from app.core.middleware import get_trace_context
-from app.domain.uploads.schemas import ImageType, UploadResponse, UploadStatusResponse
+from app.domain.uploads.schemas import (
+    ImageReconciliationResponse,
+    ImageType,
+    UploadResponse,
+    UploadStatusResponse,
+)
 from app.domain.uploads.service import get_upload_service, UploadService
+from app.infrastructure.ai.sinpe_image_analyzer import SinpeImageAnalyzer
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
+router = APIRouter(prefix="/uploads", tags=["uploads"])
 
 
 @router.post(
@@ -78,6 +86,61 @@ async def upload_receipt(
     except Exception as e:
         logger.error(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail="Upload failed")
+
+
+@router.post(
+    "/receipts/analyze",
+    response_model=ImageReconciliationResponse,
+    summary="Subir comprobante y conciliarlo (OCR + matching)",
+    description=(
+        "Recibe la imagen de un comprobante SINPE, le aplica OCR (Azure "
+        "Document Intelligence), extrae los datos y los concilia contra la "
+        "orden pendiente del POS. Devuelve el veredicto."
+    ),
+)
+async def analyze_receipt(
+    file: UploadFile = File(...),
+    id_pos: str = Form(...),
+    device_id: str = Form(...),
+    correlation_id: str = Form(...),
+    message_id: Optional[str] = Form(None),
+    analyzer: SinpeImageAnalyzer = Depends(get_image_analyzer),
+):
+    """
+    Flujo completo: imagen → OCR → extracción → conciliación.
+
+    - **file**: imagen del comprobante (JPEG, PNG, WebP, PDF)
+    - **id_pos**: identificador del POS (para buscar la orden)
+    - **device_id**: identificador del dispositivo
+    - **correlation_id**: ID de trazabilidad
+    - **message_id**: ID de mensaje relacionado (opcional)
+    """
+    if not settings.ENABLE_OCR_PIPELINE:
+        raise HTTPException(
+            status_code=503,
+            detail="El pipeline de OCR está deshabilitado (ENABLE_OCR_PIPELINE=False).",
+        )
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File is empty")
+
+    try:
+        return await analyzer.analyze(
+            file_content=content,
+            filename=file.filename or "receipt.jpg",
+            mime_type=file.content_type or "image/jpeg",
+            id_pos=id_pos,
+            device_id=device_id,
+            correlation_id=correlation_id,
+            message_id=message_id,
+        )
+    except ValueError as e:
+        logger.warning(f"Analyze validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Analyze error: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
 
 
 @router.post(

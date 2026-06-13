@@ -83,3 +83,35 @@ class SinpeMessageResponse(BaseModel):
     purchase_order_id: uuid.UUID | None
 
     model_config = {"from_attributes": True}
+
+
+# ─── Conciliación ───────────────────────────────────────────────────────────
+
+class ParsedSinpeData(BaseModel):
+    """
+    Datos estructurados extraídos de un comprobante SINPE.
+
+    Es el contrato común que alimenta al motor de conciliación, sin importar
+    el origen: hoy lo produce el extractor de SMS (regex) y mañana lo producirá
+    el mapper de OCR a partir del texto que devuelva Azure Document Intelligence.
+    """
+    amount: float | None = None              # Monto del pago
+    sender_name: str | None = None           # Nombre de quien paga
+    sender_phone: str | None = None          # Teléfono de quien paga (8 dígitos)
+    reference: str | None = None             # Número de referencia/comprobante SINPE
+    bank: str | None = None                  # Banco emisor detectado
+    transaction_at: datetime | None = None   # Fecha/hora de la transacción
+
+
+# El payload que recibe el motor de conciliación es idéntico al que manda la
+# app móvil, así que reutilizamos el mismo contrato en lugar de duplicarlo.
+SinpeMessageIncoming = SinpeMessageCreate
+
+
+class SinpeIncomingResponse(BaseModel):
+    """Resultado de procesar y conciliar un mensaje SINPE entrante."""
+    message_id: uuid.UUID
+    processed: bool
+    reconciliation_result: str | None = None   # valor de ReconciliationResult
+    order_number: str | None = None
+    detail: str | None = None

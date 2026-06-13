@@ -65,3 +65,29 @@ class SinpeMessageRepository:
             .offset(offset)
         )
         return list(result.scalars().all())
+
+    async def reference_exists(self, reference: str) -> bool:
+        """True si ya existe otro mensaje que usó esta referencia SINPE."""
+        result = await self._db.execute(
+            select(SinpeRawMessage.id).where(
+                SinpeRawMessage.reference == reference
+            )
+        )
+        return result.first() is not None
+
+    async def mark_processed(
+        self,
+        msg_id: uuid.UUID,
+        purchase_order_id: uuid.UUID | None = None,
+        reference: str | None = None,
+    ) -> None:
+        """Marca el mensaje como procesado y lo enlaza con la orden conciliada."""
+        msg = await self.get_by_id(msg_id)
+        if msg is None:
+            return
+        msg.processed = True
+        if purchase_order_id is not None:
+            msg.purchase_order_id = purchase_order_id
+        if reference is not None:
+            msg.reference = reference
+        await self._db.commit()

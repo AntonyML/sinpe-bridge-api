@@ -2,11 +2,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.infrastructure.db.base import Base
+
+# JSONB en Postgres (producción/Supabase) y JSON genérico en SQLite (dev).
+# Permite que el mismo modelo corra en ambos motores.
+JSONType = JSONB().with_variant(JSON(), "sqlite")
 
 
 class PurchaseOrder(Base):
@@ -42,9 +46,9 @@ class PurchaseOrder(Base):
     correlation_token: Mapped[str | None] = mapped_column(
         String(20), nullable=True
     )
-    # Lista de productos 
+    # Lista de productos
     products: Mapped[dict] = mapped_column(
-        JSONB, nullable=False, default=list
+        JSONType, nullable=False, default=list
     )
     ordered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -85,9 +89,12 @@ class SinpeRawMessage(Base):
         DateTime(timezone=True), nullable=True
     )
     # Envelope completo enviado por la app (metadata de seguridad/trazabilidad)
-    envelope: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    envelope: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
     # Payload crudo completo enviado por la app
-    payload_raw: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    payload_raw: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    # Número de referencia/comprobante SINPE extraído del mensaje.
+    # Se usa para evitar que el mismo comprobante concilie dos órdenes distintas.
+    reference: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
     # False = recién llegó, True = ya fue procesado por la lógica de comparación
     processed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # Cuándo lo recibió la API
@@ -102,4 +109,51 @@ class SinpeRawMessage(Base):
     )
     purchase_order: Mapped["PurchaseOrder | None"] = relationship(
         back_populates="sinpe_messages"
+    )
+
+
+class SinpeImageReceipt(Base):
+    """
+    Comprobante SINPE recibido como imagen y procesado por OCR.
+
+    Guarda la imagen (referencia), el texto que devolvió Azure, los campos
+    extraídos por el mapper y el resultado de conciliarlo contra una orden.
+    """
+    __tablename__ = "sinpe_image_receipts"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    id_pos: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # upload_id que devuelve UploadService al guardar el archivo
+    upload_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # SHA-256 de la imagen — sirve para detectar la misma imagen subida 2 veces
+    file_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+    # --- OCR ---
+    ocr_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ocr_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # --- Campos extraídos (ParsedSinpeData) ---
+    amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    sender_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    sender_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
+    bank: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    transaction_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # --- Resultado de conciliación ---
+    reconciliation_result: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    purchase_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("purchase_orders.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

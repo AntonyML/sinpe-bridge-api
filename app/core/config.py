@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     R2_ACCESS_KEY_ID: Optional[str] = None
     R2_SECRET_ACCESS_KEY: Optional[str] = None
     
+    # Azure Document Intelligence (OCR de comprobantes)
+    AZURE_DI_ENDPOINT: Optional[str] = None      # https://<recurso>.cognitiveservices.azure.com
+    AZURE_DI_KEY: Optional[str] = None
+    AZURE_DI_MODEL: str = "prebuilt-read"        # OCR de texto general
+    AZURE_DI_API_VERSION: str = "2024-11-30"     # versión estable del API REST
+    AZURE_DI_TIMEOUT_SECONDS: int = 30
+    AZURE_DI_POLL_INTERVAL_SECONDS: float = 1.0  # espera entre intentos de polling
+    AZURE_DI_MAX_POLL_ATTEMPTS: int = 30         # 30 intentos * 1s = ~30s máx
+    OCR_MIN_CONFIDENCE: float = 0.5              # bajo este umbral → revisión manual
+
     # External Services
     NOTIFICATION_WEBHOOK_URL: Optional[str] = None
     POS_API_URL: Optional[str] = None

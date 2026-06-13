@@ -12,3 +12,13 @@ async def get_order_service(db: AsyncSession = Depends(get_db)):
 async def get_sinpe_message_service(db: AsyncSession = Depends(get_db)):
     from app.domain.payments.service import SinpeMessageService
     return SinpeMessageService(db)
+
+
+async def get_reconciliation_service(db: AsyncSession = Depends(get_db)):
+    from app.domain.reconciliation.service import ReconciliationService
+    return ReconciliationService(db)
+
+
+async def get_image_analyzer(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.ai.sinpe_image_analyzer import SinpeImageAnalyzer
+    return SinpeImageAnalyzer(db)

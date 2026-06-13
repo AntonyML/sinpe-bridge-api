@@ -84,3 +84,25 @@ class ValidationError(BaseModel):
     correlation_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     details: Optional[dict] = None
+
+
+class ImageReconciliationResponse(BaseModel):
+    """Resultado de procesar un comprobante en imagen: OCR + conciliación."""
+    upload_id: str
+    receipt_id: Optional[str] = None
+
+    # OCR
+    ocr_confidence: Optional[float] = None
+
+    # Campos extraídos del comprobante
+    amount: Optional[float] = None
+    sender_name: Optional[str] = None
+    sender_phone: Optional[str] = None
+    reference: Optional[str] = None
+    bank: Optional[str] = None
+    transaction_at: Optional[datetime] = None
+
+    # Veredicto
+    reconciliation_result: Optional[str] = None  # valor de ReconciliationResult
+    order_number: Optional[str] = None
+    detail: Optional[str] = None

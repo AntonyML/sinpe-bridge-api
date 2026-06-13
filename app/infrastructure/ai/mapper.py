@@ -1,14 +1,7 @@
-"""
-Mapper: texto crudo de OCR  →  ParsedSinpeData.
-
-El cliente de Azure solo nos da el texto reconocido de la imagen. Para conciliar
+"""El cliente de Azure solo nos da el texto reconocido de la imagen. Para conciliar
 necesitamos los mismos campos estructurados que produce el extractor de SMS
 (monto, teléfono, referencia, nombre, fecha). En lugar de duplicar esa lógica,
 reutilizamos `extract_sinpe_data`, que ya sabe sacar esos campos de texto libre.
-
-Este es el punto natural de extensión: cuando tengamos comprobantes reales y
-veamos que el formato del screenshot difiere del SMS, aquí se agregan reglas
-específicas de OCR antes (o después) de pasar por el extractor genérico.
 """
 
 from app.domain.payments.schemas import ParsedSinpeData
@@ -20,10 +13,6 @@ from app.infrastructure.sms.extractor import extract_sinpe_data
 def map_ocr_to_parsed(ocr: OcrResult) -> ParsedSinpeData:
     """
     Convierte el texto del OCR en datos estructurados para conciliar.
-
-    Primero usa el parser de comprobantes (formato con etiquetas de bancos CR).
-    Si no logra sacar lo mínimo (monto), cae al extractor genérico de SMS por si
-    el texto viniera en formato corrido.
     """
     text = (ocr.text or "").strip()
 

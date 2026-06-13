@@ -55,8 +55,7 @@ class ReconciliationService:
             payload_raw=incoming.payload.model_dump(),
         )
 
-        # 4. Extraer los datos estructurados del texto crudo del SMS
-        # (monto, teléfono, referencia, nombre, fecha)
+        # 4. Extraer los datos estructurado(monto, teléfono, referencia, nombre, fecha)
         parsed: ParsedSinpeData = extract_sinpe_data(incoming.payload.body)
 
         # 5. Buscar la orden pendiente que corresponde a este pago
@@ -86,24 +85,22 @@ class ReconciliationService:
             )
 
         # 6. Verificar que la referencia SINPE no haya sido usada antes
-        # Evita que el mismo comprobante se use para pagar dos órdenes distintas
         reference_used = False
         if parsed.reference:
             reference_used = await self._msg_repo.reference_exists(parsed.reference)
 
         # 7. Ejecutar las reglas de conciliación y obtener el resultado
-        # (aprobado, rechazado, revisión manual, etc.)
         result, detail = self._engine.evaluate(order, parsed, reference_used)
 
         # 8. Actualizar el estado de la orden según el resultado
         new_status: OrderStatus | None = None
         if result == ReconciliationResult.APPROVED:
-            new_status = OrderStatus.CONFIRMED     # pago confirmado
+            new_status = OrderStatus.CONFIRMED     # confirmado
         elif result == ReconciliationResult.UNDER_REVIEW:
             new_status = OrderStatus.REVIEW        #  revisión manual
         elif result == ReconciliationResult.EXPIRED:
             new_status = OrderStatus.EXPIRED       # pago llegó fuera de tiempo
-        # Si fue RECHAZADO o DUPLICADO → la orden sigue PENDING para reintento
+        #La orden sigue PENDING para reintento
 
         if new_status:
             await self._order_repo.update_status(order.id, new_status)

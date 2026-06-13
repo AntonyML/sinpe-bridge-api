@@ -1,12 +1,5 @@
 """
 Parser de comprobantes SINPE en imagen (formato de bancos de Costa Rica).
-
-A diferencia del SMS (texto corrido), los comprobantes son formularios con
-etiquetas: "Monto transferido", "Referencia", "SINPE Móvil destino", etc.
-Aquí buscamos cada dato anclándonos a su etiqueta, lo que es mucho más robusto
-que el regex genérico del SMS para este tipo de imagen.
-
-Soporta el formato de monto costarricense: ₡2.500,00  (punto = miles, coma = decimales).
 """
 
 import re

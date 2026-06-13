@@ -150,7 +150,7 @@ class ReconciliationEngine:
         if not passed:
             soft_failures.append(reason)
 
-        # Veredicto final
+        # decisión final
         if soft_failures:
             detail = "Requiere revisión manual. Problemas: " + "; ".join(soft_failures)
             return ReconciliationResult.UNDER_REVIEW, detail

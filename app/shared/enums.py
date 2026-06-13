@@ -2,8 +2,6 @@ from enum import Enum
 
 
 class OrderStatus(str, Enum):
-    # Estos valores DEBEN coincidir con el tipo ENUM `order_status` de la DB
-    # (ver db/models.py y README): pending|matched|confirmed|review|expired|rejected
     PENDING = "pending"
     MATCHED = "matched"
     CONFIRMED = "confirmed"   # pago verificado y conciliado

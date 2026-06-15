@@ -1,5 +1,5 @@
 """
-Parser de comprobantes SINPE en imagen (formato de bancos de Costa Rica).
+Parser de comprobantes SINPE en imagen (formato BCR - Banco de Costa Rica).
 """
 
 import re
@@ -54,26 +54,6 @@ def _find_reference(text: str) -> str | None:
     """Número de referencia completo (puede tener más de 20 dígitos)."""
     m = re.search(r"Referencia[\s:#]*([0-9]{6,40})", text, re.IGNORECASE)
     return m.group(1) if m else None
-
-
-def _find_phone(text: str) -> str | None:
-    """
-    Teléfono SINPE Móvil del destino (8 dígitos, formato 8670-8452).
-    En estos comprobantes el origen es una cuenta, no un teléfono; el único
-    teléfono presente suele ser el del destinatario.
-    """
-    m = re.search(
-        r"SINPE\s+M[oó]vil\s+destino[\s\S]{0,60}?(\d{4})[-\s]?(\d{4})",
-        text,
-        re.IGNORECASE,
-    )
-    if m:
-        return m.group(1) + m.group(2)
-    # Respaldo: teléfono con prefijo +506
-    m = re.search(r"\+?506[-\s]?(\d{4})[-\s]?(\d{4})", text)
-    if m:
-        return m.group(1) + m.group(2)
-    return None
 
 
 # Palabras que NO son parte del nombre (etiqueta y prefijos de cuenta).
@@ -133,11 +113,19 @@ def _find_bank(text: str) -> str | None:
 
 
 def parse_receipt(text: str) -> ParsedSinpeData:
-    """Extrae los campos estructurados de un comprobante SINPE en imagen."""
+    """
+    Extrae los campos estructurados de un comprobante SINPE en imagen (BCR).
+
+    No se extrae `sender_phone`: en los comprobantes BCR el único teléfono
+    presente es el "SINPE Móvil destino" (el comercio que recibe el pago),
+    no el del remitente. Incluirlo aquí causaría que `rule_phone` compare
+    el teléfono del comercio contra el `correlation_token` del cliente,
+    lo cual nunca coincide.
+    """
     return ParsedSinpeData(
         amount=_find_amount(text),
         sender_name=_find_name(text),
-        sender_phone=_find_phone(text),
+        sender_phone=None,
         reference=_find_reference(text),
         bank=_find_bank(text),
         transaction_at=_find_datetime(text),

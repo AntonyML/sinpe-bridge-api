@@ -51,9 +51,29 @@ def _find_amount(text: str) -> float | None:
 
 
 def _find_reference(text: str) -> str | None:
-    """Número de referencia completo (puede tener más de 20 dígitos)."""
+    """
+    Número de referencia del comprobante.
+
+    La referencia SINPE es un número largo (~22-26 dígitos) que arranca con el
+    año (20XX, porque empieza con la fecha YYYYMMDD). La buscamos por ese patrón
+    y NO por adyacencia a la etiqueta "Referencia", porque el OCR a veces separa
+    la etiqueta de su valor (lo deja en otra línea, junto al número de cuenta).
+    """
+    # 1. Número largo que arranca con el año → patrón típico de referencia SINPE
+    year_refs = re.findall(r"\b(20\d{18,30})\b", text)
+    if year_refs:
+        return max(year_refs, key=len)
+
+    # 2. Respaldo: pegado a la etiqueta "Referencia" (layout limpio)
     m = re.search(r"Referencia[\s:#]*([0-9]{6,40})", text, re.IGNORECASE)
-    return m.group(1) if m else None
+    if m:
+        return m.group(1)
+
+    # 3. Último recurso: el run de dígitos más largo y suficientemente largo
+    runs = re.findall(r"\d{20,40}", text)
+    if runs:
+        return max(runs, key=len)
+    return None
 
 
 # Palabras que NO son parte del nombre (etiqueta y prefijos de cuenta).

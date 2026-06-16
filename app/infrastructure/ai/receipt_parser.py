@@ -33,21 +33,21 @@ def _parse_cr_amount(raw: str) -> float | None:
 
 def _find_amount(text: str) -> float | None:
     """
-    Prioriza 'Monto transferido' (lo que efectivamente recibe el comercio),
-    luego 'Monto debitado', y como último recurso el primer monto con ₡.
+    Toma el MAYOR monto con símbolo ₡/¢ del comprobante.
+
+    Un comprobante SINPE Móvil tiene tres montos: 'Monto debitado', 'Comisión'
+    y 'Monto transferido'. En SINPE Móvil la comisión es ₡0, así que
+    debitado == transferido == el mayor, y la comisión (0) es el menor.
+    Quedarnos con el máximo es robusto al orden y a la AGRUPACIÓN de etiquetas
+    que a veces hace el OCR (p. ej. "Comisión Monto transferido Motivo" seguido
+    de los tres valores), donde anclar a la etiqueta agarraba el ₡0,00 por error.
     """
-    patterns = [
-        r"Monto\s+transferido[\s\S]{0,40}?[₡¢]\s*([\d.,]+)",
-        r"Monto\s+debitado[\s\S]{0,40}?[₡¢]\s*([\d.,]+)",
-        r"[₡¢]\s*([\d.,]+)",
-    ]
-    for pat in patterns:
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            amount = _parse_cr_amount(m.group(1))
-            if amount is not None:
-                return amount
-    return None
+    amounts: list[float] = []
+    for m in re.finditer(r"[₡¢]\s*([\d.,]+)", text):
+        value = _parse_cr_amount(m.group(1))
+        if value is not None:
+            amounts.append(value)
+    return max(amounts) if amounts else None
 
 
 def _find_reference(text: str) -> str | None:
